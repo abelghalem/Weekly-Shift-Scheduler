@@ -71,7 +71,7 @@ function splitWeeks(yearToSplit, monthToSplit) {
 const depLabel = (departmentName) =>
   ({
     Service: "Service",
-  }[departmentName])
+  }[departmentName]) // Service reste identique en français
 
 // Week ka complete HTML table banata hai
 function tableHTML(weekDays, weekScheduleObject, weekIndex) {
@@ -79,7 +79,7 @@ function tableHTML(weekDays, weekScheduleObject, weekIndex) {
   
   // Table headers banao - department aur employee names ke liye
   const topHeaders = [
-    '<th rowspan="2">Department</th><th rowspan="2">Name of Employee</th>',
+    '<th rowspan="2">Département</th><th rowspan="2">Nom de l\'employé</th>',
   ]
   const dateHeaders = []
   
@@ -116,7 +116,7 @@ function tableHTML(weekDays, weekScheduleObject, weekIndex) {
   createDepartmentBlock("Service", weekScheduleObject.Service)
 
   return `<section class="card week" data-w="${weekIndex}">
-    <div style="margin-bottom:8px"><span class="badge t-7">Week ${weekIndex}</span>
+    <div style="margin-bottom:8px"><span class="badge t-7">Semaine ${weekIndex}</span>
       <small class="muted">(${fmt(weekDays[0])} → ${fmt(weekDays.at(-1))})</small>
     </div><br> <div class="table-wrap"> <table>${tableHead}<tbody>${tableRows.join(
     ""
@@ -139,7 +139,7 @@ function renderMonth(yearToRender, monthToRender) {
     mainContainer.insertAdjacentHTML("beforeend", tableHTML(weekDays, weekSchedule, weekIndex + 1))
     tabsContainer.insertAdjacentHTML(
       "beforeend",
-      `<button class="tab" data-w="${weekIndex + 1}">Week ${weekIndex + 1}</button>`
+      `<button class="tab" data-w="${weekIndex + 1}">Semaine ${weekIndex + 1}</button>`
     )
   })
   
@@ -185,7 +185,7 @@ function download() {
     document
       .querySelector(".week:not(.hidden) .badge.t-7")
       ?.textContent.trim() ||
-    "Week"
+    "Semaine"
 
   // Current date and time nikalo filename ke liye
   const currentDateTime = new Date()
@@ -229,7 +229,7 @@ function download() {
       <body>
         <section>
           <div style="margin-bottom:17px; font-size:1.18rem; color:#95b8ff; font-weight:600; letter-spacing:0.7px;">
-            ${weekNameForFile} | Exported on ${dateStringForFile} ${timeStringForFile}
+            ${weekNameForFile} | Exporté le ${dateStringForFile} ${timeStringForFile}
           </div>
           ${currentTable.outerHTML}
         </section>
@@ -268,7 +268,7 @@ function setButtonLoading(buttonElement, loadingText, emojiForLoading = "🔄", 
   }, 500)
 
   // Success function return karo
-  return (successMessage = "✅ Done!") => {
+  return (successMessage = "✅ Terminé !") => {
     clearInterval(dotInterval)
     buttonElement.textContent = successMessage
     buttonElement.classList.remove("loading")
@@ -284,20 +284,20 @@ function setButtonLoading(buttonElement, loadingText, emojiForLoading = "🔄", 
 // Regenerate button - Nayi schedule banane ke liye
 document.getElementById("regen").onclick = () => {
   const regenButton = document.getElementById("regen")
-  const finishLoading = setButtonLoading(regenButton, "Regenerating", "🔄", "spin")
+  const finishLoading = setButtonLoading(regenButton, "Régénération", "🔄", "spin")
   setTimeout(() => {
     renderMonth(currentDate.getFullYear(), currentDate.getMonth())
-    finishLoading("✅ Roster Ready!")
+    finishLoading("✅ Planning prêt !")
   }, 1200)
 }
 
 // Download button - Excel download ke liye
 document.getElementById("dl").onclick = () => {
   const downloadButton = document.getElementById("dl")
-  const finishDownload = setButtonLoading(downloadButton, "Downloading", "⬇️", "bounce")
+  const finishDownload = setButtonLoading(downloadButton, "Téléchargement", "⬇️", "bounce")
   setTimeout(() => {
     download()
-    finishDownload("✅ Downloaded!")
+    finishDownload("✅ Téléchargé !")
   }, 1200)
 }
 
@@ -335,7 +335,7 @@ function buildWeek(weekDays) {
 
   const createBadge = (cssClass, displayText) => `<span class="badge ${cssClass}">${displayText}</span>`
 
-  const OFF_DISPLAY = '<span class="off">Week&nbsp;Off</span>'
+  const OFF_DISPLAY = '<span class="off">Congé&nbsp;hebdo</span>'
 
   const timeSlots = ["7", "2", "N"]
   const timeSlotClasses = { 7: "t-7", 2: "t-2", N: "t-N" }
