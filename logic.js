@@ -27,10 +27,7 @@ const same = (firstDate, secondDate) => firstDate && secondDate && firstDate.get
 
 /* ========= Fixed staff - Permanent employee list for cloning ========= */
 const Departments = {
-  Reception: ["Sagar", "Roshan", "Karan"],
-  OPD: ["Anagha", "Shraddha Tipale", "Shubhangi", "Mamta"],
-  CallCenter: ["Jayshree", "Shraddha P", "Prasad"],
-  AppointmentDesk: ["Vanita", "Gaurav"],
+  Service: ["Jamilatou", "Nuray", "Yaëlle"],
 }
 
 /* ========= Split month into weeks - Month ko weeks mein baantna ========= */
@@ -73,10 +70,7 @@ function splitWeeks(yearToSplit, monthToSplit) {
 // Department names ko proper labels deta hai
 const depLabel = (departmentName) =>
   ({
-    Reception: "Reception (GF)",
-    OPD: "OPD (1F)", 
-    CallCenter: "Call Center (B1)",
-    AppointmentDesk: "Appointment Desk (1F)",
+    Service: "Service",
   }[departmentName])
 
 // Week ka complete HTML table banata hai
@@ -119,10 +113,7 @@ function tableHTML(weekDays, weekScheduleObject, weekIndex) {
     })
 
   // Saare departments ke blocks banao
-  createDepartmentBlock("Reception", weekScheduleObject.Reception)
-  createDepartmentBlock("OPD", weekScheduleObject.OPD)
-  createDepartmentBlock("CallCenter", weekScheduleObject.CallCenter)
-  createDepartmentBlock("AppointmentDesk", weekScheduleObject.AppointmentDesk)
+  createDepartmentBlock("Service", weekScheduleObject.Service)
 
   return `<section class="card week" data-w="${weekIndex}">
     <div style="margin-bottom:8px"><span class="badge t-7">Week ${weekIndex}</span>
@@ -316,233 +307,55 @@ renderMonth(currentDate.getFullYear(), currentDate.getMonth())
 
 // Main buildWeek function - Ek week ka complete schedule banata hai
 function buildWeek(weekDays) {
-  // Random decide karo ki Jayshree aur Shubhangi ko swap karna hai ya nahi
-  const shouldSwapThisWeek = Math.random() < 0.5
+  // Staff array banao - original list se copy karo aur sort karo
+  let serviceStaffList = [...Departments.Service].sort()
 
-  // Staff arrays banao - original list se copy karo aur sort karo
-  let receptionStaffList = [...Departments.Reception].sort()
-  
-  // OPD staff - Shubhangi aur Anagha ko temporarily hatao
-  let opdStaffList = [...Departments.OPD]
-    .filter((employeeName) => employeeName !== "Shubhangi" && employeeName !== "Anagha")
-    .sort()
-    
-  // Call center staff - Jayshree ko temporarily hatao  
-  let callCenterStaffList = [...Departments.CallCenter]
-    .filter((employeeName) => employeeName !== "Jayshree")
-    .sort()
-    
-  // Weekly swap logic - Jayshree aur Shubhangi ka departments
-  if (shouldSwapThisWeek) {
-    opdStaffList.push("Jayshree")      // Jayshree goes to OPD
-    callCenterStaffList.push("Shubhangi") // Shubhangi goes to Call Center
-  } else {
-    opdStaffList.push("Shubhangi")     // Shubhangi stays in OPD
-    callCenterStaffList.push("Jayshree")  // Jayshree stays in Call Center
-  }
-  
-  // Re-sort after adding swapped employees
-  opdStaffList.sort()
-  callCenterStaffList.sort()
-  let appointmentDeskStaffList = [...Departments.AppointmentDesk].sort()
+  // Schedule object banao - har employee ke liye
+  const scheduleObject = { Service: {} }
+  serviceStaffList.forEach((personName) => (scheduleObject.Service[personName] = {}))
 
-  // Schedule object banao - har department aur employee ke liye
-  const scheduleObject = {}
-  ;[
-    receptionStaffList,
-    [...opdStaffList, "Anagha"], // Anagha ko wapas add karo OPD mein
-    callCenterStaffList,
-    appointmentDeskStaffList,
-  ].forEach((staffArray, departmentIndex) => {
-    const deptName = ["Reception", "OPD", "CallCenter", "AppointmentDesk"][departmentIndex]
-    scheduleObject[deptName] = {}
-    staffArray.forEach((personName) => (scheduleObject[deptName][personName] = {}))
-  })
-
-  // Unique off days assign karne ka function - har department mein alag alag din off
+  // Unique off days assign karne ka function
   function assignUniqueOffs(staffArray, availableDays) {
     let offsObject = {}
     let daysAvailable = [...availableDays]
     staffArray.forEach((employeeName) => {
-      if (daysAvailable.length === 0) daysAvailable = [...availableDays] // Days khatam ho gaye toh recycle
+      if (daysAvailable.length === 0) daysAvailable = [...availableDays]
       let selectedDay = pick(daysAvailable)
       offsObject[employeeName] = selectedDay
-      // Selected day ko remove karo taaki duplicate na ho
       daysAvailable = daysAvailable.filter((dayToCheck) => !same(dayToCheck, selectedDay))
     })
     return offsObject
   }
 
-  // Har department ke liye off days decide karo
-  const offDaysForDepartments = {
-    Reception: assignUniqueOffs(receptionStaffList, (allWeekDays = [...weekDays])),
-    OPD: assignUniqueOffs([...opdStaffList, "Anagha"], [...weekDays]),
-    CallCenter: assignUniqueOffs(callCenterStaffList, [...weekDays]),
-    AppointmentDesk: assignUniqueOffs(appointmentDeskStaffList, [...weekDays]),
-  }
+  const offDays = assignUniqueOffs(serviceStaffList, [...weekDays])
 
-  // Shraddha P ka special schedule - Call Center mein variety chahiye
-  const shraddhaPTimings = {}
-  let workingDays = weekDays.filter((dayToCheck) => dayToCheck.getDay() !== 0) // Sunday ko chhod do
-  let tenThirtySelectedDay = pick(workingDays) // Ek din 10:30 shift
-  let sevenThirtyCount = 0,
-      eightOClockCount = 0
-      
-  workingDays.forEach((currentDay) => {
-    if (same(currentDay, tenThirtySelectedDay)) {
-      shraddhaPTimings[fmt(currentDay)] = "10:30"
-    } else {
-      // 7:30 aur 8:00 mein balance banao - max 3-3
-      if (sevenThirtyCount < 3 && eightOClockCount < 3) {
-        if (Math.random() < 0.5) {
-          shraddhaPTimings[fmt(currentDay)] = "7:30"
-          sevenThirtyCount++
-        } else {
-          shraddhaPTimings[fmt(currentDay)] = "8:00"
-          eightOClockCount++
-        }
-      } else if (sevenThirtyCount >= 3) {
-        shraddhaPTimings[fmt(currentDay)] = "8:00"
-        eightOClockCount++
-      } else {
-        shraddhaPTimings[fmt(currentDay)] = "7:30"
-        sevenThirtyCount++
-      }
-    }
-  })
-
-  // Appointment Desk ka alternating schedule - Vanita aur Gaurav alternate shifts
-  const appointmentDeskTimings = { Vanita: {}, Gaurav: {} }
-  let nonSundayDays = weekDays.filter((dayToCheck) => dayToCheck.getDay() !== 0)
-  let isVanitaMorning = true // Starting with Vanita morning shift
-  
-  nonSundayDays.forEach((currentDay) => {
-    const vanitaSlot = isVanitaMorning ? "9:30" : "2"      // Morning ya afternoon
-    const gauravSlot = isVanitaMorning ? "2" : "9:30"      // Opposite of Vanita
-    appointmentDeskTimings["Vanita"][fmt(currentDay)] = vanitaSlot
-    appointmentDeskTimings["Gaurav"][fmt(currentDay)] = gauravSlot
-    isVanitaMorning = !isVanitaMorning // Next day flip karo
-  })
-
-  // Helper functions - Schedule mein data daalne ke liye
-  const putSchedule = (departmentName, employeeName, dayDate, scheduleValue) => 
+  // Helper functions
+  const putSchedule = (departmentName, employeeName, dayDate, scheduleValue) =>
     (scheduleObject[departmentName][employeeName][fmt(dayDate)] = scheduleValue)
-    
+
   const createBadge = (cssClass, displayText) => `<span class="badge ${cssClass}">${displayText}</span>`
-  
+
   const OFF_DISPLAY = '<span class="off">Week&nbsp;Off</span>'
-  
-  // Time slots ke liye CSS classes
-  const timeSlotClasses = {
-    N: "t-N",
-    7: "t-7", 
-    2: "t-2",
-    "9:00": "t-9",
-    "9:30": "t-930",
-    "10:30": "t-1030",
-    "7:30": "t-730",
-    "8:00": "t-800", 
-    "11:30": "t-1130",
-  }
+
+  const timeSlots = ["7", "2", "N"]
+  const timeSlotClasses = { 7: "t-7", 2: "t-2", N: "t-N" }
 
   // Har din ka schedule fill karo
   weekDays.forEach((currentDay, dayIndex) => {
-    // ---------- Reception Department ----------
-    receptionStaffList.forEach((employeeName) => {
-      if (same(currentDay, offDaysForDepartments.Reception[employeeName])) {
-        putSchedule("Reception", employeeName, currentDay, OFF_DISPLAY)
-      } else if (employeeName === "Karan") {
-        // Karan hamesha Night shift
-        putSchedule("Reception", employeeName, currentDay, createBadge("t-N", "N"))
-      } else if (employeeName === "Sagar") {
-        // Sagar alternate karta hai 7 aur 2 shift mein
-        putSchedule(
-          "Reception",
-          employeeName, 
-          currentDay,
-          createBadge(timeSlotClasses[dayIndex % 2 === 0 ? "7" : "2"], dayIndex % 2 === 0 ? "7" : "2")
-        )
-      } else if (employeeName === "Roshan") {
-        // Roshan opposite of Sagar - jab Sagar 7 tab ye 2
-        putSchedule(
-          "Reception",
-          employeeName,
-          currentDay, 
-          createBadge(timeSlotClasses[dayIndex % 2 === 0 ? "2" : "7"], dayIndex % 2 === 0 ? "2" : "7")
-        )
-      }
-    })
-
-    // ---------- OPD Department ---------- 
-    let opdTimeSlots = ["9:30", "10:30"] // Do slots available
-    opdStaffList.forEach((employeeName, employeeIndex) => {
-      if (same(currentDay, offDaysForDepartments.OPD[employeeName])) {
-        putSchedule("OPD", employeeName, currentDay, OFF_DISPLAY)
+    serviceStaffList.forEach((employeeName, employeeIndex) => {
+      if (same(currentDay, offDays[employeeName])) {
+        putSchedule("Service", employeeName, currentDay, OFF_DISPLAY)
       } else {
-        // Cycle through time slots based on day and employee index
-        const assignedSlot = opdTimeSlots[(employeeIndex + dayIndex) % 2]
-        putSchedule("OPD", employeeName, currentDay, createBadge(timeSlotClasses[assignedSlot], assignedSlot))
-      }
-    })
-    
-    // Anagha ka special case - hamesha 9:00 shift
-    if (same(currentDay, offDaysForDepartments.OPD["Anagha"])) {
-      putSchedule("OPD", "Anagha", currentDay, OFF_DISPLAY)
-    } else {
-      putSchedule("OPD", "Anagha", currentDay, createBadge("t-9", "9:00"))
-    }
-
-    // ---------- Call Center Department ----------
-    let swappedEmployee = shouldSwapThisWeek ? "Shubhangi" : "Jayshree" // Kon swap hua hai
-    callCenterStaffList.forEach((employeeName) => {
-      if (same(currentDay, offDaysForDepartments.CallCenter[employeeName])) {
-        putSchedule("CallCenter", employeeName, currentDay, OFF_DISPLAY)
-      } else if (employeeName === "Prasad") {
-        // Prasad hamesha 11:30 shift
-        putSchedule("CallCenter", employeeName, currentDay, createBadge("t-1130", "11:30"))
-      } else if (employeeName === "Shraddha P") {
-        // Shraddha P ka pre-planned schedule use karo
-        let assignedSlot = shraddhaPTimings[fmt(currentDay)] || "7:30"
-        putSchedule("CallCenter", employeeName, currentDay, createBadge(timeSlotClasses[assignedSlot], assignedSlot))
-      } else if (employeeName === swappedEmployee) {
-        // Swapped employee ka timing Shraddha P ke opposite rakho
-        let shraddhaSlot = shraddhaPTimings[fmt(currentDay)]
-        if (!shraddhaSlot) {
-          // Agar Shraddha ka slot nahi mila toh random assign karo
-          let randomSlot = pick(["7:30", "8:00"])
-          putSchedule("CallCenter", employeeName, currentDay, createBadge(timeSlotClasses[randomSlot], randomSlot))
-        } else if (shraddhaSlot === "7:30") {
-          // Shraddha 7:30 hai toh ye 8:00 lega
-          putSchedule("CallCenter", employeeName, currentDay, createBadge("t-800", "8:00"))
-        } else if (shraddhaSlot === "8:00") {
-          // Shraddha 8:00 hai toh ye 7:30 lega
-          putSchedule("CallCenter", employeeName, currentDay, createBadge("t-730", "7:30"))
-        } else if (shraddhaSlot === "10:30") {
-          // Shraddha 10:30 hai toh koi bhi de sakte hai
-          let randomSlot = pick(["7:30", "8:00"])
-          putSchedule("CallCenter", employeeName, currentDay, createBadge(timeSlotClasses[randomSlot], randomSlot))
-        }
-      }
-    })
-
-    // ---------- Appointment Desk Department ----------
-    appointmentDeskStaffList.forEach((employeeName) => {
-      if (same(currentDay, offDaysForDepartments.AppointmentDesk[employeeName])) {
-        putSchedule("AppointmentDesk", employeeName, currentDay, OFF_DISPLAY)
-      } else {
-        // Pre-planned alternating schedule use karo
-        const assignedSlot = appointmentDeskTimings[employeeName][fmt(currentDay)] || "9:30"
-        putSchedule("AppointmentDesk", employeeName, currentDay, createBadge(timeSlotClasses[assignedSlot], assignedSlot))
+        // Rotate time slots based on day and employee index
+        const assignedSlot = timeSlots[(employeeIndex + dayIndex) % timeSlots.length]
+        putSchedule("Service", employeeName, currentDay, createBadge(timeSlotClasses[assignedSlot], assignedSlot))
       }
     })
   })
 
-  // Final week object return karo with all staff lists and schedule data
+  // Final week object return karo
   return {
-    Reception: receptionStaffList,
-    OPD: [...opdStaffList, "Anagha"], // Anagha ko wapas add kar diya
-    CallCenter: callCenterStaffList,
-    AppointmentDesk: appointmentDeskStaffList,
-    data: scheduleObject, // Actual schedule data
+    Service: serviceStaffList,
+    data: scheduleObject,
   }
 }
